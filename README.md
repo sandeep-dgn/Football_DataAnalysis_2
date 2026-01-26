@@ -28,7 +28,7 @@ The analysis is performed using the **Metrica Sports Open Dataset**. This is one
     * `scipy` (Signal Processing for velocity/acceleration)
 
 ## 🏗️ Development Phases
-- [] **Phase 1:** Data Loading and Coordinate Transformation (Converting 0-1 to Meters).
+- [ ] **Phase 1:** Data Loading and Coordinate Transformation (Converting 0-1 to Meters).
 - [ ] **Phase 2:** Visualizing "Game States" (Plotting player positions during goals).
 - [ ] **Phase 3:** Calculating Physical Metrics (Top speed, distance covered, and accelerations).
 - [ ] **Phase 4:** Tactical Analysis (Pitch control models and passing networks).
