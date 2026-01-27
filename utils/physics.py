@@ -1,6 +1,8 @@
 import numpy as np # type: ignore
 import pandas as pd # type: ignore
 from scipy.signal import savgol_filter # type: ignore
+import plotly.express as px # type: ignore
+import plotly.graph_objects as go # type: ignore
 
 def prepare_player_data(df, team_label='Home'):
     DT = 0.04
@@ -55,7 +57,7 @@ def get_player_card_stats(df, player_id, team_label='Home'):
     return {
         "Total Distance": f"{np.round(df[dist_col].sum() / 1000, 2)} km",
         "Top Speed": f"{np.round(df[speed_col].max(), 2)} km/h",
-        "Sprints": len(df[df[speed_col] > 25.2]) // 25 
+        
     }
 
 def get_team_physicals_surgical(df, team_label='Home'):
@@ -75,3 +77,85 @@ def get_team_physicals_surgical(df, team_label='Home'):
         })
 
     return pd.DataFrame(summary_data)
+
+
+
+
+
+
+
+
+def get_player_heatmap(df, player_id, team_label='Home'):
+    # 1. Column Selection
+    x_col = next((c for c in df.columns if c.lower() == f"{team_label}_{player_id}_x".lower()), None)
+    y_col = next((c for c in df.columns if c.lower() == f"{team_label}_{player_id}_y".lower()), None)
+    
+    if not x_col or not y_col:
+        return go.Figure().update_layout(title="No Position Data Found", template="dark")
+
+    # 2. Extract Data
+    df_temp = df[[x_col, y_col]].copy().dropna()
+    
+    # --- HALFTIME FLIP LOGIC ---
+    # We detect the second half based on the 'Period' column if it exists, 
+    # or by splitting the dataframe in half.
+    if 'Period' in df.columns:
+        # Flip only if Period is 2
+        df_temp.loc[df['Period'] == 2, x_col] *= -1
+        df_temp.loc[df['Period'] == 2, y_col] *= -1
+    else:
+        # Fallback: Split by the middle index of the match
+        mid_point = len(df_temp) // 2
+        df_temp.iloc[mid_point:, 0] *= -1 # Flip X
+        df_temp.iloc[mid_point:, 1] *= -1 # Flip Y
+    # ---------------------------
+
+    # Downsample for performance
+    df_sub = df_temp.iloc[::10]
+    x_data = df_sub[x_col].values
+    y_data = df_sub[y_col].values
+
+    # 3. Create the Figure
+    fig = go.Figure()
+
+    # Glowing Contour Heatmap
+    fig.add_trace(go.Histogram2dContour(
+        x=x_data,
+        y=y_data,
+        ncontours=40,
+        colorscale='Hot', 
+        showscale=False,
+        contours=dict(coloring='heatmap', showlines=False),
+        line=dict(width=0)
+    ))
+
+    # 4. Styling the Pitch (Centered at 0,0)
+    line_style = dict(color="rgba(255, 255, 255, 0.4)", width=2)
+    
+    # Outer boundaries
+    fig.add_shape(type="rect", x0=-53, y0=-34, x1=53, y1=34, line=line_style)
+    # Midfield line and Center Circle
+    fig.add_shape(type="line", x0=0, y0=-34, x1=0, y1=34, line=line_style)
+    fig.add_shape(type="circle", x0=-9.15, y0=-9.15, x1=9.15, y1=9.15, line=line_style)
+    # Penalty boxes
+    fig.add_shape(type="rect", x0=-53, y0=-20, x1=-36.5, y1=20, line=line_style)
+    fig.add_shape(type="rect", x0=36.5, y0=-20, x1=53, y1=20, line=line_style)
+
+    # 5. Add Attack Arrow (To show direction is now standardized)
+    fig.add_annotation(
+        x=20, y=38, text="ATTACK DIRECTION",
+        showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2,
+        arrowcolor="white", font=dict(color="white", size=10)
+    )
+
+    # 6. Layout Configuration
+    fig.update_layout(
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        xaxis=dict(range=[-55, 55], visible=False),
+        yaxis=dict(range=[-40, 40], visible=False), # Slightly wider to fit the arrow
+        margin=dict(l=10, r=10, t=10, b=10),
+        height=500
+    )
+
+    return fig
