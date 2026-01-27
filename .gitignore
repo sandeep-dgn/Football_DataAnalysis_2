@@ -1,3 +1,7 @@
 /venv
 /random.ipynb
 /temp.ipynb
+
+__pycache__/
+
+
