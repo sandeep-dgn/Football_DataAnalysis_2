@@ -1,6 +1,6 @@
-import numpy as np
-import pandas as pd
-from scipy.signal import savgol_filter
+import numpy as np # type: ignore
+import pandas as pd # type: ignore
+from scipy.signal import savgol_filter # type: ignore
 
 def prepare_player_data(df, team_label='Home'):
     DT = 0.04
